@@ -1,0 +1,71 @@
+### Load packages
+library(Hmisc)
+library(caret)
+library(randomForest)
+library(AppliedPredictiveModeling)
+library(rattle)
+library(rpart.plot)
+library(RColorBrewer)
+set.seed(888)
+
+### Download data
+training.file   <- 'pml-training.csv'
+testing.file <- 'pml-test.csv'
+training.url    <- 'http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv'
+testing.url  <- 'http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv'
+download.file(training.url, training.file)
+download.file(testing.url,testing.file )
+
+### Clean data
+df.training <- read.csv(training.file, na.strings=c("NA","","#DIV/0!"), header=TRUE)
+colnames.train <- colnames(df.training)
+df.testing <- read.csv(testing.file, na.strings=c("NA","","#DIV/0!"), header=TRUE)
+colnames.test <- colnames(df.testing)
+# Delete columns with all missing values
+df.training<-df.training[,colSums(is.na(df.training)) == 0]
+df.testing <-df.testing[,colSums(is.na(df.testing)) == 0]
+
+# Drop NA data and the first extra 7 columns 
+df.training   <-df.training[,-c(1:7)]
+df.testing <-df.testing[,-c(1:7)]
+
+# Verify that the column names are identical in the training and test set
+all.equal(colnames.train[1:length(colnames.train)-1], colnames.test[1:length(colnames.train)-1])
+
+### Splitting data into training and testing sets
+inTraining.matrix    <- createDataPartition(df.training$classe, p = 0.75, list = FALSE)
+training.data.df <- df.training[inTraining.matrix, ]
+testing.data.df  <- df.training[-inTraining.matrix, ]
+dim(training.data.df)
+dim(testing.data.df)
+head(training.data.df)
+head(testing.data.df)
+
+#Decision tree
+mod.decisiontree <- rpart(classe ~ ., data=training.data.df, method="class")
+pred.decisiontree<- predict(mod.decisiontree, testing.data.df, type = "class")
+# Plot of the decision tree
+rpart.plot(mod.decisiontree, main="Classification Tree", extra=102, under=TRUE, faclen=0)
+# Test results on testing set
+confusionMatrix(pred.decisiontree, testing.data.df$classe)
+
+#Random forest
+mod.randomforest <- randomForest(classe ~. , data=training.data.df, method="class")
+pred.randomforest <- predict(mod.randomforest, training.data.df, type = "class")
+confusionMatrix(pred.randomforest, training.data.df$classe)
+
+# Using random forest for final prediction
+pred.final<- predict(mod.randomforest, df.training, type="class")
+pred.final
+
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+pml_write_files(pred.final)
+
+
