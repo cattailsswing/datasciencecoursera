@@ -1,85 +1,99 @@
 <html>
 
 <head>
+
+<p> Coursera Machine Learning Class_Prediction Assignment <p>
 <title>Title</title>
 </head>
 
 <body>
 
-<p>This is an R HTML document. When you click the <b>Knit HTML</b> button a web page will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:</p>
-
-<!--begin.rcode
-install.packages("Hmisc")
-install.packages("caret")
-install.packages("randomForest")
-install.packages("AppliedPredictiveModeling")
-install.packages("rattle")
-install.packages("rpart.plot")
-install.packages("RColorBrewer")
-
-### Load packages
-library(Hmisc)
-library(caret)
-library(randomForest)
-library(AppliedPredictiveModeling)
-library(rattle)
-library(rpart.plot)
+install.packages("Hmisc")    <br />
+install.packages("caret") <br />
+install.packages("randomForest") <br />
+install.packages("AppliedPredictiveModeling") <br />
+install.packages("rattle") <br />
+install.packages("rpart.plot") <br />
+install.packages("RColorBrewer") <br />
+<br />
+<br />
+### Load packages <br />
+library(Hmisc) <br />
+library(caret) <br />
+library(randomForest) <br />
+library(AppliedPredictiveModeling) <br />
+library(rattle) <br />
+library(rpart.plot) <br />
 library(RColorBrewer)
-set.seed(888)
+set.seed(888)<br />
+<br />
+<br />
+### Download data <br />
 
-### Download data
-training.file   <- 'pml-training.csv'
-testing.file <- 'pml-test.csv'
-training.url    <- 'http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv'
-testing.url  <- 'http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv'
-download.file(training.url, training.file)
-download.file(testing.url,testing.file )
+<p> training.file   <- 'pml-training.csv' <br />
+testing.file <- 'pml-test.csv'  <br />
+training.url    <- 'http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv' 
+<p> testing.url  <- 'http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv' <p> <br />
+download.file(training.url, training.file)    <br />
+download.file(testing.url,testing.file )  <br />
+<br />
+<br />
+### Clean data <br />
+df.training <- read.csv(training.file, na.strings=c("NA","","#DIV/0!"), header=TRUE)  <br /> 
+colnames.train <- colnames(df.training) <br />
+df.testing <- read.csv(testing.file, na.strings=c("NA","","#DIV/0!"), header=TRUE) <br />
+colnames.test <- colnames(df.testing) <br />
+# Delete columns with all missing values <br />
+df.training<-df.training[,colSums(is.na(df.training)) == 0] <br />
+df.testing <-df.testing[,colSums(is.na(df.testing)) == 0] <br />
 
-### Clean data
-df.training <- read.csv(training.file, na.strings=c("NA","","#DIV/0!"), header=TRUE)
-colnames.train <- colnames(df.training)
-df.testing <- read.csv(testing.file, na.strings=c("NA","","#DIV/0!"), header=TRUE)
-colnames.test <- colnames(df.testing)
-# Delete columns with all missing values
-df.training<-df.training[,colSums(is.na(df.training)) == 0]
-df.testing <-df.testing[,colSums(is.na(df.testing)) == 0]
+# Drop NA data and the first extra 7 columns <br />
+df.training   <-df.training[,-c(1:7)] <br />
+df.testing <-df.testing[,-c(1:7)]  <br />
 
-# Drop NA data and the first extra 7 columns 
-df.training   <-df.training[,-c(1:7)]
-df.testing <-df.testing[,-c(1:7)]
+# Verify that the column names are identical in the training and test set <br />
+all.equal(colnames.train[1:length(colnames.train)-1], colnames.test[1:length(colnames.train)-1]) <br />
+<br />
+<br />
+### Splitting data into training and testing sets <br />
+inTraining.matrix    <- createDataPartition(df.training$classe, p = 0.75, list = FALSE) <br />
+training.data.df <- df.training[inTraining.matrix, ]  <br />
+testing.data.df  <- df.training[-inTraining.matrix, ]   <br />
+dim(training.data.df)  <br />
+dim(testing.data.df) <br />
+head(training.data.df) <br />
+head(testing.data.df)  <br />
+<br />
+<br />
+#Decision tree <br />
+mod.decisiontree <- rpart(classe ~ ., data=training.data.df, method="class")  <br />
+pred.decisiontree<- predict(mod.decisiontree, testing.data.df, type = "class")  <br />
 
-# Verify that the column names are identical in the training and test set
-all.equal(colnames.train[1:length(colnames.train)-1], colnames.test[1:length(colnames.train)-1])
+# Plot of the decision tree   <br />
+rpart.plot(mod.decisiontree, main="Classification Tree", extra=102, under=TRUE, faclen=0)  <br />
+# Test results on testing set  <br />
+confusionMatrix(pred.decisiontree, testing.data.df$classe)  <br />
+<br />
+<br />
+#Random forest  <br />
+mod.randomforest <- randomForest(classe ~. , data=training.data.df, method="class")  <br />
+pred.randomforest <- predict(mod.randomforest, training.data.df, type = "class")  <br /> 
 
-### Splitting data into training and testing sets
-inTraining.matrix    <- createDataPartition(df.training$classe, p = 0.75, list = FALSE)
-training.data.df <- df.training[inTraining.matrix, ]
-testing.data.df  <- df.training[-inTraining.matrix, ]
-dim(training.data.df)
-dim(testing.data.df)
-head(training.data.df)
-head(testing.data.df)
+confusionMatrix(pred.randomforest, training.data.df$classe)<br />
 
-#Decision tree
-mod.decisiontree <- rpart(classe ~ ., data=training.data.df, method="class")
-pred.decisiontree<- predict(mod.decisiontree, testing.data.df, type = "class")
-# Plot of the decision tree
-rpart.plot(mod.decisiontree, main="Classification Tree", extra=102, under=TRUE, faclen=0)
-# Test results on testing set
-confusionMatrix(pred.decisiontree, testing.data.df$classe)
+  
+   <br />
+   <br />
+# Using random forest for final prediction  <br />
+pred.final<- predict(mod.randomforest, df.training, type="class")  <br />
+<br />
+pred.final <br />
 
-#Random forest
-mod.randomforest <- randomForest(classe ~. , data=training.data.df, method="class")
-pred.randomforest <- predict(mod.randomforest, training.data.df, type = "class")
-confusionMatrix(pred.randomforest, training.data.df$classe)
-
-# Using random forest for final prediction
-pred.final<- predict(mod.randomforest, df.training, type="class")
-pred.final
-end.rcode-->
+<p>
+  <img src="C:/Users/Brooke/Dropbox/Rplot.png" alt="Rplot" style="float:left;width:420px;height:420px">
+  
+</p>
+<body>
 
 
-<!--rpart.plot(mod.decisiontree, main="Classification Tree", extra=102, under=TRUE, faclen=0)-->
-
-</body>
 </html>
