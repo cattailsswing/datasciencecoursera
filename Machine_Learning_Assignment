@@ -56,16 +56,18 @@ confusionMatrix(pred.randomforest, training.data.df$classe)
 
 # Using random forest for final prediction
 pred.final<- predict(mod.randomforest, df.training, type="class")
-pred.final
 
+###Upload answers to Coursera
+answers = pred.final
 pml_write_files = function(x){
   n = length(x)
   for(i in 1:n){
     filename = paste0("problem_id_",i,".txt")
-    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+    write.table(x[i],file="filename_local directory",quote=FALSE,row.names=FALSE,col.names=FALSE)
   }
 }
 
-pml_write_files(pred.final)
+pml_write_files(answers,[2])
+pml_write_files(answers,[3])...[20]
 
 
